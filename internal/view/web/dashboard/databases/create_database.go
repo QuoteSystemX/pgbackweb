@@ -10,12 +10,14 @@ import (
 	"github.com/eduardolat/pgbackweb/internal/view/web/respondhtmx"
 	"github.com/labstack/echo/v4"
 	nodx "github.com/nodxdev/nodxgo"
+	alpine "github.com/nodxdev/nodxgo-alpine"
 	htmx "github.com/nodxdev/nodxgo-htmx"
 	lucide "github.com/nodxdev/nodxgo-lucide"
 )
 
 type createDatabaseDTO struct {
 	Name             string `form:"name" validate:"required"`
+	DatabaseType     string `form:"database_type" validate:"required"`
 	Version          string `form:"version" validate:"required"`
 	ConnectionString string `form:"connection_string" validate:"required"`
 }
@@ -34,7 +36,8 @@ func (h *handlers) createDatabaseHandler(c echo.Context) error {
 	_, err := h.servs.DatabasesService.CreateDatabase(
 		ctx, dbgen.DatabasesServiceCreateDatabaseParams{
 			Name:             formData.Name,
-			PgVersion:        formData.Version,
+			DatabaseType:     formData.DatabaseType,
+			Version:          formData.Version,
 			ConnectionString: formData.ConnectionString,
 		},
 	)
@@ -59,10 +62,13 @@ func createDatabaseButton() nodx.Node {
 	mo := component.Modal(component.ModalParams{
 		Size:  component.SizeMd,
 		Title: "Add database",
-		Content: []nodx.Node{
-			nodx.FormEl(
-				nodx.Id("add-database-form"),
-				nodx.Class("space-y-2"),
+			Content: []nodx.Node{
+			nodx.Div(
+				alpine.XData("alpineDatabaseTypeVersion()"),
+				alpine.XInit("init()"),
+				nodx.FormEl(
+					nodx.Id("add-database-form"),
+					nodx.Class("space-y-2"),
 
 				component.InputControl(component.InputControlParams{
 					Name:        "name",
@@ -74,13 +80,26 @@ func createDatabaseButton() nodx.Node {
 				}),
 
 				component.SelectControl(component.SelectControlParams{
+					Name:        "database_type",
+					Label:       "Database Type",
+					Placeholder: "Select a database type",
+					Required:    true,
+					HelpText:    "The type of database",
+					Children: []nodx.Node{
+						alpine.XModel("dbType"),
+						alpine.XOn("change", "updateDatabaseType()"),
+						component.DatabaseTypeSelectOptions(sql.NullString{}),
+					},
+				}),
+
+				component.SelectControl(component.SelectControlParams{
 					Name:        "version",
 					Label:       "Version",
 					Placeholder: "Select a version",
 					Required:    true,
 					HelpText:    "The version of the database",
 					Children: []nodx.Node{
-						component.PGVersionSelectOptions(sql.NullString{}),
+						component.DatabaseVersionSelectOptions("postgresql", sql.NullString{}),
 					},
 				}),
 
@@ -90,8 +109,9 @@ func createDatabaseButton() nodx.Node {
 					Placeholder: "postgresql://user:password@localhost:5432/mydb",
 					Required:    true,
 					Type:        component.InputTypeText,
-					HelpText:    "It should be a valid PostgreSQL connection string including the database name. It will be stored securely using PGP encryption.",
+					HelpText:    "Connection string for the database. For PostgreSQL: postgresql://user:password@host:port/dbname. For ClickHouse: --host=host --port=9000 --user=user --password=password. It will be stored securely using PGP encryption.",
 				}),
+				),
 			),
 
 			nodx.Div(

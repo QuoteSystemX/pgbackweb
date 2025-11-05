@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/eduardolat/pgbackweb/internal/integration/database"
 	"github.com/eduardolat/pgbackweb/internal/util/strutil"
 	"github.com/orsinium-labs/enum"
 )
@@ -70,9 +71,23 @@ func New() *Client {
 	return &Client{}
 }
 
-// ParseVersion returns the PGVersion enum member for the given PostgreSQL
-// version as a string.
-func (Client) ParseVersion(version string) (PGVersion, error) {
+// GetDatabaseType returns the database type identifier
+func (Client) GetDatabaseType() string {
+	return database.DatabaseTypePostgreSQL
+}
+
+// GetSupportedVersions returns a list of supported PostgreSQL versions
+func (Client) GetSupportedVersions() []string {
+	versions := make([]string, len(PGVersions))
+	for i, v := range PGVersions {
+		versions[i] = v.Value.Version
+	}
+	return versions
+}
+
+// ParseVersionPG parses the PostgreSQL version string into a PGVersion enum
+// This is kept for backward compatibility with existing code
+func (Client) ParseVersionPG(version string) (PGVersion, error) {
 	switch version {
 	case "13":
 		return PG13, nil
@@ -91,8 +106,14 @@ func (Client) ParseVersion(version string) (PGVersion, error) {
 	}
 }
 
-// Test tests the connection to the PostgreSQL database
-func (Client) Test(version PGVersion, connString string) error {
+// ParseVersion implements DatabaseClient interface
+func (c Client) ParseVersion(version string) (interface{}, error) {
+	return c.ParseVersionPG(version)
+}
+
+// TestPG tests the connection to the PostgreSQL database using PGVersion
+// This is kept for backward compatibility with existing code
+func (Client) TestPG(version PGVersion, connString string) error {
 	cmd := exec.Command(version.Value.PSQL, connString, "-c", "SELECT 1;")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -103,6 +124,15 @@ func (Client) Test(version PGVersion, connString string) error {
 	}
 
 	return nil
+}
+
+// Test implements DatabaseClient interface
+func (c Client) Test(version string, connString string) error {
+	pgVersion, err := c.ParseVersionPG(version)
+	if err != nil {
+		return fmt.Errorf("error parsing PostgreSQL version: %w", err)
+	}
+	return c.TestPG(pgVersion, connString)
 }
 
 // DumpParams contains the parameters for the pg_dump command
@@ -186,9 +216,10 @@ func (Client) Dump(
 	return reader
 }
 
-// DumpZip runs the pg_dump command with the given parameters and returns the
-// ZIP-compressed SQL dump as an io.Reader.
-func (c *Client) DumpZip(
+// DumpZipPG runs the pg_dump command with the given parameters and returns the
+// ZIP-compressed SQL dump as an io.Reader using PGVersion
+// This is kept for backward compatibility with existing code
+func (c *Client) DumpZipPG(
 	version PGVersion, connString string, params ...DumpParams,
 ) io.Reader {
 	dumpReader := c.Dump(version, connString, params...)
@@ -215,8 +246,28 @@ func (c *Client) DumpZip(
 	return reader
 }
 
-// RestoreZip downloads or copies the ZIP from the given url or path, unzips it,
-// and runs the psql command to restore the database.
+// DumpZip implements DatabaseClient interface
+func (c *Client) DumpZip(version string, connString string, params database.DumpParams) io.Reader {
+	pgVersion, err := c.ParseVersionPG(version)
+	if err != nil {
+		// Return a reader that will error on read
+		reader, writer := io.Pipe()
+		go func() {
+			writer.CloseWithError(fmt.Errorf("error parsing PostgreSQL version: %w", err))
+		}()
+		return reader
+	}
+
+	var dumpParams DumpParams
+	if pgParams, ok := params.(DumpParams); ok {
+		dumpParams = pgParams
+	}
+
+	return c.DumpZipPG(pgVersion, connString, dumpParams)
+}
+
+// RestoreZipPG downloads or copies the ZIP from the given url or path, unzips it,
+// and runs the psql command to restore the database using PGVersion
 //
 // The ZIP file must contain a dump.sql file with the SQL dump to restore.
 //
@@ -224,7 +275,9 @@ func (c *Client) DumpZip(
 //   - connString: connection string to the database
 //   - isLocal: whether the ZIP file is local or a URL
 //   - zipURLOrPath: URL or path to the ZIP file
-func (Client) RestoreZip(
+//
+// This is kept for backward compatibility with existing code
+func (Client) RestoreZipPG(
 	version PGVersion, connString string, isLocal bool, zipURLOrPath string,
 ) error {
 	workDir, err := os.MkdirTemp("", "pbw-restore-*")
@@ -275,4 +328,13 @@ func (Client) RestoreZip(
 	}
 
 	return nil
+}
+
+// RestoreZip implements DatabaseClient interface
+func (c Client) RestoreZip(version string, connString string, isLocal bool, zipURLOrPath string) error {
+	pgVersion, err := c.ParseVersionPG(version)
+	if err != nil {
+		return fmt.Errorf("error parsing PostgreSQL version: %w", err)
+	}
+	return c.RestoreZipPG(pgVersion, connString, isLocal, zipURLOrPath)
 }

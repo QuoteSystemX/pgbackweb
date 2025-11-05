@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
+	"github.com/eduardolat/pgbackweb/internal/integration/database"
 	"github.com/eduardolat/pgbackweb/internal/integration/postgres"
 	"github.com/eduardolat/pgbackweb/internal/logger"
 	"github.com/eduardolat/pgbackweb/internal/util/strutil"
@@ -75,7 +76,8 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		}
 	}
 
-	pgVersion, err := s.ints.PGClient.ParseVersion(back.DatabasePgVersion)
+	// Get database client based on database type
+	dbClient, err := s.ints.GetDatabaseClient(back.DatabaseDatabaseType)
 	if err != nil {
 		logError(err)
 		return updateExec(dbgen.ExecutionsServiceUpdateExecutionParams{
@@ -86,7 +88,8 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		})
 	}
 
-	err = s.ints.PGClient.Test(pgVersion, back.DecryptedDatabaseConnectionString)
+	// Test database connection
+	err = dbClient.Test(back.DatabaseVersion, back.DecryptedDatabaseConnectionString)
 	if err != nil {
 		logError(err)
 		return updateExec(dbgen.ExecutionsServiceUpdateExecutionParams{
@@ -97,16 +100,24 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		})
 	}
 
-	dumpReader := s.ints.PGClient.DumpZip(
-		pgVersion, back.DecryptedDatabaseConnectionString, postgres.DumpParams{
+	// Create dump parameters based on database type
+	var dumpParams database.DumpParams
+	if back.DatabaseDatabaseType == "postgresql" {
+		dumpParams = postgres.DumpParams{
 			DataOnly:   back.BackupOptDataOnly,
 			SchemaOnly: back.BackupOptSchemaOnly,
 			Clean:      back.BackupOptClean,
 			IfExists:   back.BackupOptIfExists,
 			Create:     back.BackupOptCreate,
 			NoComments: back.BackupOptNoComments,
-		},
-	)
+		}
+	} else {
+		// For other database types, use empty params for now
+		// TODO: Add support for ClickHouse-specific params
+		dumpParams = nil
+	}
+
+	dumpReader := dbClient.DumpZip(back.DatabaseVersion, back.DecryptedDatabaseConnectionString, dumpParams)
 
 	date := time.Now().Format(timeutil.LayoutSlashYYYYMMDD)
 	file := fmt.Sprintf(

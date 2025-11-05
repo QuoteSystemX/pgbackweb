@@ -94,7 +94,8 @@ func (s *Service) RunRestoration(
 		connString = db.DecryptedConnectionString
 	}
 
-	pgVersion, err := s.ints.PGClient.ParseVersion(execution.DatabasePgVersion)
+	// Get database client based on database type
+	dbClient, err := s.ints.GetDatabaseClient(execution.DatabaseDatabaseType)
 	if err != nil {
 		logError(err)
 		return updateRes(dbgen.RestorationsServiceUpdateRestorationParams{
@@ -105,7 +106,8 @@ func (s *Service) RunRestoration(
 		})
 	}
 
-	err = s.ints.PGClient.Test(pgVersion, connString)
+	// Test database connection
+	err = dbClient.Test(execution.DatabaseVersion, connString)
 	if err != nil {
 		logError(err)
 		return updateRes(dbgen.RestorationsServiceUpdateRestorationParams{
@@ -129,9 +131,7 @@ func (s *Service) RunRestoration(
 		})
 	}
 
-	err = s.ints.PGClient.RestoreZip(
-		pgVersion, connString, isLocal, zipURLOrPath,
-	)
+	err = dbClient.RestoreZip(execution.DatabaseVersion, connString, isLocal, zipURLOrPath)
 	if err != nil {
 		logError(err)
 		return updateRes(dbgen.RestorationsServiceUpdateRestorationParams{

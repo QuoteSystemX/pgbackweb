@@ -11,7 +11,8 @@ SELECT
   backups.opt_no_comments as backup_opt_no_comments,
 
   pgp_sym_decrypt(databases.connection_string, @encryption_key) AS decrypted_database_connection_string,
-  databases.pg_version as database_pg_version,
+  databases.database_type as database_database_type,
+  databases.version as database_version,
 
   destinations.bucket_name as destination_bucket_name,
   destinations.region as destination_region,
