@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
+	"github.com/eduardolat/pgbackweb/internal/integration/clickhouse"
 	"github.com/eduardolat/pgbackweb/internal/integration/database"
 	"github.com/eduardolat/pgbackweb/internal/integration/postgres"
 	"github.com/eduardolat/pgbackweb/internal/logger"
@@ -111,9 +112,17 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 			Create:     back.BackupOptCreate,
 			NoComments: back.BackupOptNoComments,
 		}
+	} else if back.DatabaseDatabaseType == "clickhouse" {
+		// ClickHouse backup parameters
+		// Note: PostgreSQL-specific options are not applicable to ClickHouse
+		// ClickHouse uses different backup mechanisms
+		dumpParams = clickhouse.DumpParams{
+			Tables:       []string{}, // Empty means all tables
+			AllDatabases: false,      // Can be configured per backup if needed
+			Compression:  0,          // Default compression
+		}
 	} else {
-		// For other database types, use empty params for now
-		// TODO: Add support for ClickHouse-specific params
+		// For unknown database types, use nil
 		dumpParams = nil
 	}
 

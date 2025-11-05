@@ -55,9 +55,9 @@ func (Client) ParseVersion(version string) (interface{}, error) {
 // Test tests the connection to the ClickHouse database
 func (Client) Test(version string, connString string) error {
 	// Use clickhouse-client to test connection
-	// The connString should be a connection string like: --host=localhost --port=9000 --user=default --password=
-	// If it's a URL format, we need to parse it, but for now assume it's already in the correct format
-	// For simplicity, we'll use the connection string directly
+	// The connString can be in format: --host=localhost --port=9000 --user=default --password=
+	// Or as a clickhouse:// URL which clickhouse-client will parse automatically
+	// We pass it as a single argument - clickhouse-client will parse it
 	cmd := exec.Command("clickhouse-client", connString, "--query", "SELECT 1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *Client) DumpZip(version string, connString string, params database.Dump
 
 		// Build clickhouse-backup command
 		args := []string{"create", backupName}
-		
+
 		var dumpParams DumpParams
 		if chParams, ok := params.(DumpParams); ok {
 			dumpParams = chParams
