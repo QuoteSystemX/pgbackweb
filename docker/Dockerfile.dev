@@ -33,7 +33,7 @@ RUN set -e && \
     # Add ClickHouse repository
     # https://clickhouse.com/docs/en/install#install-from-deb-packages
     mkdir -p /usr/share/keyrings && \
-    wget -qO- https://clickhouse.com/static/public.key | gpg --dearmor > /usr/share/keyrings/clickhouse-keyring.gpg && \
+    curl -fsSL https://packages.clickhouse.com/deb/static/public.key | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list && \
     
     # Install APT packages
