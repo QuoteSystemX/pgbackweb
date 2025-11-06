@@ -55,7 +55,7 @@ func (h *handlers) restoreExecutionHandler(c echo.Context) error {
 
 	if formData.ConnString != "" {
 		err := h.servs.DatabasesService.TestDatabase(
-			ctx, execution.DatabasePgVersion, formData.ConnString,
+			ctx, execution.DatabaseDatabaseType, execution.DatabaseVersion, formData.ConnString,
 		)
 		if err != nil {
 			return respondhtmx.ToastError(c, err.Error())
@@ -187,14 +187,14 @@ func restoreExecutionForm(
 					nodx.Div(
 						nodx.P(
 							component.BText(fmt.Sprintf(
-								"This restoration uses psql v%s", execution.DatabasePgVersion,
+								"This restoration uses %s v%s", execution.DatabaseDatabaseType, execution.DatabaseVersion,
 							)),
 						),
-						component.PText(`
+						component.PText(fmt.Sprintf(`
 							Please make sure the database you are restoring to is compatible
-							with this version of psql and double-check that the picked
+							with this version of %s and double-check that the picked
 							database is the one you want to restore to.
-						`),
+						`, execution.DatabaseDatabaseType)),
 					),
 				),
 			),

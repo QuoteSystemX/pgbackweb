@@ -28,7 +28,8 @@ SELECT
   executions.*,
   backups.name AS backup_name,
   databases.name AS database_name,
-  databases.pg_version AS database_pg_version,
+  databases.database_type AS database_database_type,
+  databases.version AS database_version,
   destinations.name AS destination_name,
   backups.is_local AS backup_is_local
 FROM executions

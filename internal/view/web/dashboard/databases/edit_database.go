@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	nodx "github.com/nodxdev/nodxgo"
+	alpine "github.com/nodxdev/nodxgo-alpine"
 	htmx "github.com/nodxdev/nodxgo-htmx"
 	lucide "github.com/nodxdev/nodxgo-lucide"
 )
@@ -35,7 +36,8 @@ func (h *handlers) editDatabaseHandler(c echo.Context) error {
 		ctx, dbgen.DatabasesServiceUpdateDatabaseParams{
 			ID:               databaseID,
 			Name:             sql.NullString{String: formData.Name, Valid: true},
-			PgVersion:        sql.NullString{String: formData.Version, Valid: true},
+			DatabaseType:     sql.NullString{String: formData.DatabaseType, Valid: true},
+			Version:          sql.NullString{String: formData.Version, Valid: true},
 			ConnectionString: sql.NullString{String: formData.ConnectionString, Valid: true},
 		},
 	)
@@ -68,9 +70,12 @@ func editDatabaseButton(
 		Size:  component.SizeMd,
 		Title: "Edit database",
 		Content: []nodx.Node{
-			nodx.FormEl(
-				nodx.Id(formID),
-				nodx.Class("space-y-2"),
+			nodx.Div(
+				alpine.XData("alpineDatabaseTypeVersion()"),
+				alpine.XInit("init()"),
+				nodx.FormEl(
+					nodx.Id(formID),
+					nodx.Class("space-y-2"),
 
 				component.InputControl(component.InputControlParams{
 					Name:        "name",
@@ -85,14 +90,29 @@ func editDatabaseButton(
 				}),
 
 				component.SelectControl(component.SelectControlParams{
+					Name:     "database_type",
+					Label:    "Database Type",
+					Required: true,
+					HelpText: "The type of database",
+					Children: []nodx.Node{
+						alpine.XModel("dbType"),
+						alpine.XOn("change", "updateDatabaseType()"),
+						component.DatabaseTypeSelectOptions(sql.NullString{
+							Valid:  true,
+							String: database.DatabaseType,
+						}),
+					},
+				}),
+
+				component.SelectControl(component.SelectControlParams{
 					Name:     "version",
 					Label:    "Version",
 					Required: true,
 					HelpText: "The version of the database",
 					Children: []nodx.Node{
-						component.PGVersionSelectOptions(sql.NullString{
+						component.DatabaseVersionSelectOptions(database.DatabaseType, sql.NullString{
 							Valid:  true,
-							String: database.PgVersion,
+							String: database.Version,
 						}),
 					},
 				}),
@@ -103,11 +123,12 @@ func editDatabaseButton(
 					Placeholder: "postgresql://user:password@localhost:5432/mydb",
 					Required:    true,
 					Type:        component.InputTypeText,
-					HelpText:    "It should be a valid PostgreSQL connection string including the database name. It will be stored securely using PGP encryption.",
+					HelpText:    "Connection string for the database. For PostgreSQL: postgresql://user:password@host:port/dbname. For ClickHouse (in Docker): --host=pbw_clickhouse --port=9000 --user=default --password= or clickhouse://default@pbw_clickhouse:9000/default. For local ClickHouse: --host=localhost --port=9000 --user=default --password=. It will be stored securely using PGP encryption.",
 					Children: []nodx.Node{
 						nodx.Value(database.DecryptedConnectionString),
 					},
 				}),
+				),
 			),
 
 			nodx.Div(

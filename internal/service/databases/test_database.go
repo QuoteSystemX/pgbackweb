@@ -36,7 +36,7 @@ func (s *Service) TestDatabaseAndStoreResult(
 		return storeRes(false, fmt.Errorf("error getting database: %w", err))
 	}
 
-	err = s.TestDatabase(ctx, db.PgVersion, db.DecryptedConnectionString)
+	err = s.TestDatabase(ctx, db.DatabaseType, db.Version, db.DecryptedConnectionString)
 	if err != nil && db.TestOk.Valid && db.TestOk.Bool {
 		s.webhooksService.RunDatabaseUnhealthy(db.ID)
 	}
@@ -51,14 +51,15 @@ func (s *Service) TestDatabaseAndStoreResult(
 }
 
 func (s *Service) TestDatabase(
-	ctx context.Context, version, connString string,
+	ctx context.Context, dbType, version, connString string,
 ) error {
-	pgVersion, err := s.ints.PGClient.ParseVersion(version)
+	// Get database client based on database type
+	dbClient, err := s.ints.GetDatabaseClient(dbType)
 	if err != nil {
-		return fmt.Errorf("error parsing PostgreSQL version: %w", err)
+		return fmt.Errorf("error getting database client: %w", err)
 	}
 
-	err = s.ints.PGClient.Test(pgVersion, connString)
+	err = dbClient.Test(version, connString)
 	if err != nil {
 		return fmt.Errorf("error testing database: %w", err)
 	}

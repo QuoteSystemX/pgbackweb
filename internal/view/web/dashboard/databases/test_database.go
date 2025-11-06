@@ -19,7 +19,7 @@ func (h *handlers) testDatabaseHandler(c echo.Context) error {
 	}
 
 	err := h.servs.DatabasesService.TestDatabase(
-		ctx, formData.Version, formData.ConnectionString,
+		ctx, formData.DatabaseType, formData.Version, formData.ConnectionString,
 	)
 	if err != nil {
 		return respondhtmx.ToastError(c, err.Error())

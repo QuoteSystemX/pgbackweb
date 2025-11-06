@@ -38,8 +38,8 @@ jobs:
           docker buildx build
           --load
           --platform ${{ matrix.vars.platform }}
-          --tag pgbackweb:latest
+          --tag quotesystemx/pgbackweb:latest
           --file docker/Dockerfile.dev .
 
       - name: Run lint, test, and build
-        run: docker run --rm -v $PWD:/app pgbackweb:latest /bin/bash -c "cd /app && task ci"
+        run: docker run --rm -v $PWD:/app quotesystemx/pgbackweb:latest /bin/bash -c "cd /app && task ci"

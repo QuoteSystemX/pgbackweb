@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
+	"github.com/eduardolat/pgbackweb/internal/integration/clickhouse"
+	"github.com/eduardolat/pgbackweb/internal/integration/database"
 	"github.com/eduardolat/pgbackweb/internal/integration/postgres"
 	"github.com/eduardolat/pgbackweb/internal/logger"
 	"github.com/eduardolat/pgbackweb/internal/util/strutil"
@@ -75,7 +77,8 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		}
 	}
 
-	pgVersion, err := s.ints.PGClient.ParseVersion(back.DatabasePgVersion)
+	// Get database client based on database type
+	dbClient, err := s.ints.GetDatabaseClient(back.DatabaseDatabaseType)
 	if err != nil {
 		logError(err)
 		return updateExec(dbgen.ExecutionsServiceUpdateExecutionParams{
@@ -86,7 +89,8 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		})
 	}
 
-	err = s.ints.PGClient.Test(pgVersion, back.DecryptedDatabaseConnectionString)
+	// Test database connection
+	err = dbClient.Test(back.DatabaseVersion, back.DecryptedDatabaseConnectionString)
 	if err != nil {
 		logError(err)
 		return updateExec(dbgen.ExecutionsServiceUpdateExecutionParams{
@@ -97,16 +101,33 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		})
 	}
 
-	dumpReader := s.ints.PGClient.DumpZip(
-		pgVersion, back.DecryptedDatabaseConnectionString, postgres.DumpParams{
+	// Create dump parameters based on database type
+	var dumpParams database.DumpParams
+	switch back.DatabaseDatabaseType {
+	case "postgresql":
+		dumpParams = postgres.DumpParams{
 			DataOnly:   back.BackupOptDataOnly,
 			SchemaOnly: back.BackupOptSchemaOnly,
 			Clean:      back.BackupOptClean,
 			IfExists:   back.BackupOptIfExists,
 			Create:     back.BackupOptCreate,
 			NoComments: back.BackupOptNoComments,
-		},
-	)
+		}
+	case "clickhouse":
+		// ClickHouse backup parameters
+		// Note: PostgreSQL-specific options are not applicable to ClickHouse
+		// ClickHouse uses different backup mechanisms
+		dumpParams = clickhouse.DumpParams{
+			Tables:       []string{}, // Empty means all tables
+			AllDatabases: false,      // Can be configured per backup if needed
+			Compression:  0,          // Default compression
+		}
+	default:
+		// For unknown database types, use nil
+		dumpParams = nil
+	}
+
+	dumpReader := dbClient.DumpZip(back.DatabaseVersion, back.DecryptedDatabaseConnectionString, dumpParams)
 
 	date := time.Now().Format(timeutil.LayoutSlashYYYYMMDD)
 	file := fmt.Sprintf(

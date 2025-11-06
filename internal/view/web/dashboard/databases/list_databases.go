@@ -91,7 +91,7 @@ func listDatabases(
 					component.SpanText(database.Name),
 				),
 			),
-			nodx.Td(component.SpanText("PostgreSQL "+database.PgVersion)),
+			nodx.Td(component.SpanText(fmt.Sprintf("%s %s", database.DatabaseType, database.Version))),
 			nodx.Td(
 				nodx.Class("space-x-1"),
 				component.CopyButtonSm(database.DecryptedConnectionString),
