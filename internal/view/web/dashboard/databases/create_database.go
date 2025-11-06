@@ -109,7 +109,7 @@ func createDatabaseButton() nodx.Node {
 					Placeholder: "postgresql://user:password@localhost:5432/mydb",
 					Required:    true,
 					Type:        component.InputTypeText,
-					HelpText:    "Connection string for the database. For PostgreSQL: postgresql://user:password@host:port/dbname. For ClickHouse: --host=host --port=9000 --user=user --password=password. It will be stored securely using PGP encryption.",
+					HelpText:    "Connection string for the database. For PostgreSQL: postgresql://user:password@host:port/dbname. For ClickHouse (in Docker): --host=pbw_clickhouse --port=9000 --user=default --password= or clickhouse://default@pbw_clickhouse:9000/default. For local ClickHouse: --host=localhost --port=9000 --user=default --password=. It will be stored securely using PGP encryption.",
 				}),
 				),
 			),

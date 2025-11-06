@@ -55,9 +55,11 @@ func (Client) ParseVersion(version string) (interface{}, error) {
 // Test tests the connection to the ClickHouse database
 func (Client) Test(version string, connString string) error {
 	// Use clickhouse-client to test connection
-	// The connString can be in format: --host=localhost --port=9000 --user=default --password=
-	// Or as a clickhouse:// URL which clickhouse-client will parse automatically
-	// We pass it as a single argument - clickhouse-client will parse it
+	// The connString can be in format:
+	//   - For Docker: --host=pbw_clickhouse --port=9000 --user=default --password=
+	//   - For local: --host=localhost --port=9000 --user=default --password=
+	//   - Or as a clickhouse:// URL: clickhouse://default@localhost:9000/default
+	// clickhouse-client will parse the connection string automatically
 	cmd := exec.Command("clickhouse-client", connString, "--query", "SELECT 1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
