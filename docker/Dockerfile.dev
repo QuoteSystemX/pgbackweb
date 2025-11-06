@@ -36,7 +36,7 @@ RUN set -e && \
     
     # Install APT packages
     apt update && apt install -y \
-        wget unzip tzdata git npm \
+        wget unzip tzdata git curl xz-utils \
         postgresql-client-13 postgresql-client-14 \
         postgresql-client-15 postgresql-client-16 \
         postgresql-client-17 postgresql-client-18 \
@@ -56,10 +56,21 @@ RUN set -e && \
         chmod +x /usr/local/bin/clickhouse-backup; \
     fi && \
     
-    # Install NodeJS
-    apt install -y npm && \
-    npm install -g n@latest && \
-    n 22.19.0 && \
+    # Install NodeJS 22.19.0
+    # Download and install Node.js binary directly
+    if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
+        NODE_ARCH="arm64"; \
+    else \
+        NODE_ARCH="x64"; \
+    fi && \
+    NODE_VERSION="22.19.0" && \
+    wget --no-verbose https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz -O /tmp/node.tar.xz && \
+    tar -xJf /tmp/node.tar.xz -C /tmp && \
+    mv /tmp/node-v${NODE_VERSION}-linux-${NODE_ARCH} /usr/local/node && \
+    ln -sf /usr/local/node/bin/node /usr/local/bin/node && \
+    ln -sf /usr/local/node/bin/npm /usr/local/bin/npm && \
+    ln -sf /usr/local/node/bin/npx /usr/local/bin/npx && \
+    rm /tmp/node.tar.xz && \
 
     # Install downloadable binaries
     if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
