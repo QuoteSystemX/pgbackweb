@@ -54,8 +54,8 @@ services:
     volumes:
       - pbw_vol_clickhouse:/var/lib/clickhouse
     ports:
-      - "8123:8123"  # HTTP interface
-      - "9001:9000"  # Native protocol (mapped to 9001 on host to avoid conflict with MinIO)
+      - "8123:8123" # HTTP interface
+      - "9001:9000" # Native protocol (mapped to 9001 on host to avoid conflict with MinIO)
     networks:
       - pbw_network
     ulimits:

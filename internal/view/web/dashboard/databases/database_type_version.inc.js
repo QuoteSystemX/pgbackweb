@@ -15,7 +15,9 @@ window.alpineDatabaseTypeVersion = function () {
 
     init() {
       // Get initial database type from form if editing
-      const dbTypeSelect = this.$el.querySelector('select[name="database_type"]');
+      const dbTypeSelect = this.$el.querySelector(
+        'select[name="database_type"]',
+      );
       if (dbTypeSelect && dbTypeSelect.value) {
         this.dbType = dbTypeSelect.value;
       }
@@ -25,7 +27,9 @@ window.alpineDatabaseTypeVersion = function () {
     },
 
     updateDatabaseType() {
-      const dbTypeSelect = this.$el.querySelector('select[name="database_type"]');
+      const dbTypeSelect = this.$el.querySelector(
+        'select[name="database_type"]',
+      );
       if (dbTypeSelect) {
         this.dbType = dbTypeSelect.value;
         this.updateVersionOptions();
@@ -45,7 +49,8 @@ window.alpineDatabaseTypeVersion = function () {
 
       // Add new options based on database type
       const versions = this.versions[this.dbType] || this.versions.postgresql;
-      const prefix = this.versionPrefix[this.dbType] || this.versionPrefix.postgresql;
+      const prefix =
+        this.versionPrefix[this.dbType] || this.versionPrefix.postgresql;
 
       versions.forEach((version) => {
         const option = document.createElement("option");
