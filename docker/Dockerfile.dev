@@ -27,16 +27,18 @@ RUN set -e && \
     apt update && apt install -y postgresql-common && \
     /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y && \
     
+    # Install basic tools first (needed for ClickHouse key download)
+    apt install -y wget curl apt-transport-https ca-certificates gnupg && \
+    
     # Add ClickHouse repository
     # https://clickhouse.com/docs/en/install#install-from-deb-packages
-    apt install -y apt-transport-https ca-certificates gnupg && \
     mkdir -p /usr/share/keyrings && \
     wget -qO- https://clickhouse.com/static/public.key | gpg --dearmor > /usr/share/keyrings/clickhouse-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list && \
     
     # Install APT packages
     apt update && apt install -y \
-        wget unzip tzdata git curl xz-utils \
+        unzip tzdata git xz-utils \
         postgresql-client-13 postgresql-client-14 \
         postgresql-client-15 postgresql-client-16 \
         postgresql-client-17 postgresql-client-18 \
