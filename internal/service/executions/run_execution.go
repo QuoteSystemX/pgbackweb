@@ -103,7 +103,8 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 
 	// Create dump parameters based on database type
 	var dumpParams database.DumpParams
-	if back.DatabaseDatabaseType == "postgresql" {
+	switch back.DatabaseDatabaseType {
+	case "postgresql":
 		dumpParams = postgres.DumpParams{
 			DataOnly:   back.BackupOptDataOnly,
 			SchemaOnly: back.BackupOptSchemaOnly,
@@ -112,7 +113,7 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 			Create:     back.BackupOptCreate,
 			NoComments: back.BackupOptNoComments,
 		}
-	} else if back.DatabaseDatabaseType == "clickhouse" {
+	case "clickhouse":
 		// ClickHouse backup parameters
 		// Note: PostgreSQL-specific options are not applicable to ClickHouse
 		// ClickHouse uses different backup mechanisms
@@ -121,7 +122,7 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 			AllDatabases: false,      // Can be configured per backup if needed
 			Compression:  0,          // Default compression
 		}
-	} else {
+	default:
 		// For unknown database types, use nil
 		dumpParams = nil
 	}
