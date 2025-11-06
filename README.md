@@ -4,7 +4,7 @@
     <img align="center" width="70" src="https://raw.githubusercontent.com/eduardolat/pgbackweb/main/internal/view/static/images/logo.png"/>
   </p>
   <p align="center">
-    🐘 Effortless PostgreSQL backups with a user-friendly web interface! 🌐💾
+    🐘 Effortless database backups (PostgreSQL, ClickHouse) with a user-friendly web interface! 🌐💾
   </p>
 </p>
 
@@ -38,25 +38,65 @@
 
 ## Why PG Back Web?
 
-PG Back Web isn't just another backup tool. It's your trusted ally in ensuring the security and availability of your PostgreSQL data:
+PG Back Web isn't just another backup tool. It's your trusted ally in ensuring the security and availability of your database data:
 
 - 🎯 **Designed for everyone**: From individual developers to teams.
 - ⏱️ **Save time**: Automate your backups and forget about manual tasks.
 - ⚡ **Plug and play**: Don't waste time with complex configurations.
+- 🔄 **Multi-database support**: Not just PostgreSQL - also supports ClickHouse and more coming soon!
 
 ## Features
 
+### Core Capabilities
+
 - 📦 **Intuitive web interface**: Manage your backups with ease, no database expertise required.
-- 📅 **Scheduled backups**: Set it and forget it. PG Back Web takes care of the rest.
-- 📈 **Backup monitoring**: Visualize the status of your backups with execution logs.
-- 📤 **Instant download & restore**: Restore and download your backups when you need them, directly from the web interface.
-- 🖥 **Multi-version support**: Compatible with PostgreSQL 13, 14, 15, 16, 17, and 18.
-- 📁 **Local & S3 storage**: Store backups locally or add as many S3 buckets as you want for greater flexibility.
+- 📅 **Scheduled backups**: Set it and forget it with cron-based scheduling. PG Back Web takes care of the rest.
+- 📈 **Backup monitoring**: Visualize the status of your backups with detailed execution logs, file sizes, and execution history.
+- 📤 **Instant download & restore**: Restore and download your backups when you need them, directly from the web interface. Supports restoring to any configured database with automatic version detection.
+- 🔄 **Backup duplication**: Easily duplicate existing backup configurations to create new ones quickly.
+- 👥 **Multi-user support**: Manage multiple users with session-based authentication.
+
+### Database Support
+
+- 🐘 **PostgreSQL**: Full support for PostgreSQL 13, 14, 15, 16, 17, and 18.
+- 🚀 **ClickHouse**: Support for ClickHouse versions 22.8, 23.8, 24.1, and 24.3.
+- 🔌 **Extensible architecture**: Easy to add support for additional database types.
+
+### Storage Options
+
+- 📁 **Local storage**: Store backups directly on the server filesystem.
+- ☁️ **S3-compatible storage**: Support for AWS S3 and any S3-compatible storage (MinIO, DigitalOcean Spaces, etc.).
+- 🔀 **Flexible destinations**: Configure multiple S3 destinations and choose per backup.
+- 🔗 **Presigned URLs**: Secure, time-limited download links for S3-stored backups.
+
+### Monitoring & Notifications
+
 - ❤️‍🩹 **Health checks**: Automatically check the health of your databases and destinations.
-- 🔔 **Webhooks**: Get notified when a backup finishes, failed, health check fails, or other events.
-- 🔒 **Security first**: PGP encryption to protect your sensitive information.
-- 🛡️ **Open-source trust**: Open-source code under AGPL v3 license, backed by the robust pg_dump tool.
-- 🌚 **Dark mode**: Because we all love dark mode.
+- 🔔 **Webhooks**: Get notified via webhooks for:
+  - Database health status changes (healthy/unhealthy)
+  - Destination health status changes (healthy/unhealthy)
+  - Backup execution success
+  - Backup execution failures
+- 📊 **Execution tracking**: Detailed logs for every backup execution with timestamps, file sizes, and status.
+
+### Security & Reliability
+
+- 🔒 **PGP encryption**: All sensitive data (connection strings, credentials) encrypted at rest using PostgreSQL PGP encryption.
+- 🔐 **Password security**: Bcrypt hashing for user passwords.
+- 🛡️ **Session management**: Secure session-based authentication with IP and user agent tracking.
+- 🔑 **Encryption key**: Centralized encryption key management for all sensitive data.
+
+### User Experience
+
+- 🌚 **Dark mode**: Beautiful dark mode interface.
+- 📱 **Responsive design**: Works seamlessly on desktop and mobile devices.
+- ⚡ **Fast & lightweight**: Built with Go for performance and efficiency.
+- 🎨 **Modern UI**: Clean, intuitive interface built with TailwindCSS and DaisyUI.
+
+### Open Source
+
+- 🛡️ **Open-source trust**: Open-source code under AGPL v3 license, backed by robust database tools (pg_dump, clickhouse-backup).
+- 🔍 **Transparent**: Full source code available for review and contribution.
 
 ## Installation
 
@@ -99,6 +139,29 @@ services:
 
 You can watch [this youtube video](https://www.youtube.com/watch?v=vf7SLrSO8sw) to see how easy it is to set up PG Back Web.
 
+### Use Cases
+
+PG Back Web is perfect for:
+
+- **Development teams**: Centralized backup management for multiple databases
+- **DevOps engineers**: Automated backup scheduling with monitoring and notifications
+- **Small businesses**: Simple, reliable database backups without complex infrastructure
+- **Multi-database environments**: Manage backups for PostgreSQL and ClickHouse from one interface
+- **Compliance requirements**: Track all backup executions with detailed logs and history
+- **Disaster recovery**: Quick restore capabilities with version-aware restoration
+
+## Architecture
+
+PG Back Web is built with a modular, extensible architecture:
+
+- **Service layer**: Clean separation of concerns with domain-specific services (backups, databases, destinations, executions, restorations, webhooks, users, auth)
+- **Database integration**: Pluggable database clients supporting multiple database types (PostgreSQL, ClickHouse)
+- **Storage abstraction**: Unified storage interface supporting local filesystem and S3-compatible storage
+- **Code generation**: SQLC-based query generation for type-safe database operations
+- **Migration-first**: Database schema managed with Goose migrations
+- **Cron scheduling**: Built-in cron scheduler for automated backup execution
+- **Web framework**: Echo-based web framework with Alpine.js for interactive UI
+
 ## Configuration
 
 You only need to configure the following environment variables:
@@ -118,6 +181,40 @@ You only need to configure the following environment variables:
 ## Screenshot
 
 <img src="https://raw.githubusercontent.com/eduardolat/pgbackweb/main/assets/screenshot.png" />
+
+## Key Features Explained
+
+### Backup Management
+
+- **Scheduled backups**: Configure backups with cron expressions for flexible scheduling (e.g., daily at 2 AM, weekly on Sundays)
+- **Manual backups**: Trigger backups on-demand from the web interface
+- **Backup duplication**: Clone existing backup configurations to quickly create similar backups
+- **Backup activation**: Enable/disable backups without deleting them
+- **Execution history**: View all backup executions with status, timestamps, file sizes, and download links
+
+### Restoration
+
+- **One-click restore**: Restore any backup to any configured database with a single click
+- **Version-aware**: Automatically detects and uses the correct database version for restoration
+- **Local and remote**: Restore from both local storage and S3-compatible storage
+- **Restoration tracking**: Monitor restoration progress and view restoration history
+
+### Webhooks
+
+Configure webhooks to receive notifications for various events:
+
+- **Database health events**: Get notified when databases become healthy or unhealthy
+- **Destination health events**: Monitor storage destination availability
+- **Execution events**: Receive notifications for successful or failed backup executions
+- **Custom configuration**: Configure webhook URLs, HTTP methods (GET/POST), custom headers, and request bodies
+- **Execution history**: View all webhook execution attempts with response details
+
+### Health Checks
+
+- **Automatic monitoring**: Regular health checks for all configured databases and destinations
+- **Status tracking**: Visual indicators for healthy/unhealthy status
+- **Test on demand**: Manually test database and destination connections
+- **Bulk testing**: Test all databases or destinations at once
 
 ## Reset password
 
