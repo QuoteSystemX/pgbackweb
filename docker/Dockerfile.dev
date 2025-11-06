@@ -33,8 +33,9 @@ RUN set -e && \
     # Add ClickHouse repository
     # https://clickhouse.com/docs/en/install#install-from-deb-packages
     mkdir -p /usr/share/keyrings && \
-    curl -fsSL https://packages.clickhouse.com/deb/static/public.key | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list && \
+    curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg && \
+    ARCH=$(dpkg --print-architecture) && \
+    echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg arch=${ARCH}] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list && \
     
     # Install APT packages
     apt update && apt install -y \
@@ -44,18 +45,20 @@ RUN set -e && \
         postgresql-client-17 postgresql-client-18 \
         clickhouse-client && \
     
-    # Install clickhouse-backup (separate tool, not in official repo)
+    # Install clickhouse-backup (Go binary, not in official repo)
     # https://github.com/Altinity/clickhouse-backup
     if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
         wget --no-verbose https://github.com/Altinity/clickhouse-backup/releases/download/v2.6.0/clickhouse-backup-linux-arm64.tar.gz -O /tmp/clickhouse-backup.tar.gz && \
         tar -xzf /tmp/clickhouse-backup.tar.gz -C /tmp && \
-        mv /tmp/clickhouse-backup /usr/local/bin/clickhouse-backup && \
-        chmod +x /usr/local/bin/clickhouse-backup; \
+        find /tmp -name "clickhouse-backup" -type f -exec mv {} /usr/local/bin/ \; && \
+        chmod +x /usr/local/bin/clickhouse-backup && \
+        rm -rf /tmp/clickhouse-backup*; \
     else \
         wget --no-verbose https://github.com/Altinity/clickhouse-backup/releases/download/v2.6.0/clickhouse-backup-linux-amd64.tar.gz -O /tmp/clickhouse-backup.tar.gz && \
         tar -xzf /tmp/clickhouse-backup.tar.gz -C /tmp && \
-        mv /tmp/clickhouse-backup /usr/local/bin/clickhouse-backup && \
-        chmod +x /usr/local/bin/clickhouse-backup; \
+        find /tmp -name "clickhouse-backup" -type f -exec mv {} /usr/local/bin/ \; && \
+        chmod +x /usr/local/bin/clickhouse-backup && \
+        rm -rf /tmp/clickhouse-backup*; \
     fi && \
     
     # Install NodeJS 22.19.0
@@ -124,8 +127,7 @@ RUN set -e && \
 
     # Create backups dir
     mkdir /backups && \
-    chmod 777 /backups && \
-    true
+    chmod 777 /backups
 
 ##############
 # START HERE #
