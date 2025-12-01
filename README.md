@@ -220,11 +220,30 @@ Configure webhooks to receive notifications for various events:
 
 You can reset your PG Back Web password by running the following command in the server where PG Back Web is running:
 
+### Docker
+
 ```bash
 docker exec -it <container_name_or_id> sh -c change-password
 ```
 
 You should replace `<container_name_or_id>` with the name or ID of the PG Back Web container, then just follow the instructions.
+
+### Kubernetes
+
+For Kubernetes deployments, use `kubectl exec` instead:
+
+```bash
+echo "user@example.com" | kubectl exec -i <pod_name> -n <namespace> -- change-password
+```
+
+Replace:
+- `<pod_name>` with the name of your PG Back Web pod (e.g., `pgbackweb-5bc4c86566-ltdwq`)
+- `<namespace>` with the namespace where PG Back Web is deployed (e.g., `database`)
+- `user@example.com` with the email address of the user whose password you want to reset
+
+The command will output a new randomly generated password that you can use to log in. You can change it after logging in through the web interface.
+
+**Note:** The `-i` flag (without `-t`) is used because Kubernetes doesn't support interactive TTY in this context. The email is passed via stdin using `echo`.
 
 ## Next steps
 
