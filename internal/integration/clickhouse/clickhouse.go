@@ -37,6 +37,11 @@ func (Client) GetSupportedVersions() []string {
 
 // ParseVersion validates and parses the version string for ClickHouse
 func (Client) ParseVersion(version string) (interface{}, error) {
+	// Version is optional for ClickHouse - allow empty string
+	if version == "" {
+		return "", nil
+	}
+
 	// Validate version format (should be like "22.8", "23.8", etc.)
 	supportedVersions := map[string]bool{
 		"22.8": true,
@@ -63,9 +68,13 @@ func (Client) Test(version string, connString string) error {
 	cmd := exec.Command("clickhouse-client", connString, "--query", "SELECT 1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		versionStr := version
+		if versionStr == "" {
+			versionStr = "unknown"
+		}
 		return fmt.Errorf(
 			"error running clickhouse-client test v%s: %s",
-			version, output,
+			versionStr, output,
 		)
 	}
 
@@ -87,7 +96,12 @@ func (c *Client) DumpZip(version string, connString string, params database.Dump
 		}
 		defer os.RemoveAll(workDir)
 
-		backupName := fmt.Sprintf("backup-%s", version)
+		// Use version in backup name, or "unknown" if not provided
+		versionStr := version
+		if versionStr == "" {
+			versionStr = "unknown"
+		}
+		backupName := fmt.Sprintf("backup-%s", versionStr)
 		backupPath := filepath.Join(workDir, backupName)
 
 		// Build clickhouse-backup command
@@ -118,9 +132,13 @@ func (c *Client) DumpZip(version string, connString string, params database.Dump
 		cmd.Dir = workDir
 		output, err := cmd.CombinedOutput()
 		if err != nil {
+			versionStr := version
+			if versionStr == "" {
+				versionStr = "unknown"
+			}
 			writer.CloseWithError(fmt.Errorf(
 				"error running clickhouse-backup create v%s: %s",
-				version, output,
+				versionStr, output,
 			))
 			return
 		}

@@ -18,7 +18,7 @@ import (
 type createDatabaseDTO struct {
 	Name             string `form:"name" validate:"required"`
 	DatabaseType     string `form:"database_type" validate:"required"`
-	Version          string `form:"version" validate:"required"`
+	Version          string `form:"version"`
 	ConnectionString string `form:"connection_string" validate:"required"`
 }
 
@@ -33,11 +33,22 @@ func (h *handlers) createDatabaseHandler(c echo.Context) error {
 		return respondhtmx.ToastError(c, err.Error())
 	}
 
+	// Version is required only for PostgreSQL
+	if formData.DatabaseType == "postgresql" && formData.Version == "" {
+		return respondhtmx.ToastError(c, "Version is required for PostgreSQL databases")
+	}
+
+	// For ClickHouse, use empty string (will be stored as NULL in DB)
+	version := formData.Version
+	if formData.DatabaseType == "clickhouse" {
+		version = ""
+	}
+
 	_, err := h.servs.DatabasesService.CreateDatabase(
 		ctx, dbgen.DatabasesServiceCreateDatabaseParams{
 			Name:             formData.Name,
 			DatabaseType:     formData.DatabaseType,
-			Version:          formData.Version,
+			Version:          version,
 			ConnectionString: formData.ConnectionString,
 		},
 	)
@@ -96,7 +107,7 @@ func createDatabaseButton() nodx.Node {
 					Name:        "version",
 					Label:       "Version",
 					Placeholder: "Select a version",
-					Required:    true,
+					Required:    false,
 					HelpText:    "The version of the database",
 					Children: []nodx.Node{
 						component.DatabaseVersionSelectOptions("postgresql", sql.NullString{}),

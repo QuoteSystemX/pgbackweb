@@ -32,12 +32,27 @@ func (h *handlers) editDatabaseHandler(c echo.Context) error {
 		return respondhtmx.ToastError(c, err.Error())
 	}
 
+	// Version is required only for PostgreSQL
+	if formData.DatabaseType == "postgresql" && formData.Version == "" {
+		return respondhtmx.ToastError(c, "Version is required for PostgreSQL databases")
+	}
+
+	// Prepare version as NullString - NULL for ClickHouse if empty, otherwise the value
+	var version sql.NullString
+	if formData.DatabaseType == "clickhouse" {
+		// For ClickHouse, version can be NULL
+		version = sql.NullString{String: "", Valid: false}
+	} else {
+		// For PostgreSQL, version is required
+		version = sql.NullString{String: formData.Version, Valid: true}
+	}
+
 	_, err = h.servs.DatabasesService.UpdateDatabase(
 		ctx, dbgen.DatabasesServiceUpdateDatabaseParams{
 			ID:               databaseID,
 			Name:             sql.NullString{String: formData.Name, Valid: true},
 			DatabaseType:     sql.NullString{String: formData.DatabaseType, Valid: true},
-			Version:          sql.NullString{String: formData.Version, Valid: true},
+			Version:          version,
 			ConnectionString: sql.NullString{String: formData.ConnectionString, Valid: true},
 		},
 	)
@@ -107,11 +122,11 @@ func editDatabaseButton(
 				component.SelectControl(component.SelectControlParams{
 					Name:     "version",
 					Label:    "Version",
-					Required: true,
+					Required: false,
 					HelpText: "The version of the database",
 					Children: []nodx.Node{
 						component.DatabaseVersionSelectOptions(database.DatabaseType, sql.NullString{
-							Valid:  true,
+							Valid:  database.Version != "",
 							String: database.Version,
 						}),
 					},
