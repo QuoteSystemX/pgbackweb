@@ -73,7 +73,7 @@ func createDatabaseButton() nodx.Node {
 	mo := component.Modal(component.ModalParams{
 		Size:  component.SizeMd,
 		Title: "Add database",
-			Content: []nodx.Node{
+		Content: []nodx.Node{
 			nodx.Div(
 				alpine.XData("alpineDatabaseTypeVersion()"),
 				alpine.XInit("init()"),
@@ -81,47 +81,47 @@ func createDatabaseButton() nodx.Node {
 					nodx.Id("add-database-form"),
 					nodx.Class("space-y-2"),
 
-				component.InputControl(component.InputControlParams{
-					Name:        "name",
-					Label:       "Name",
-					Placeholder: "My database",
-					Required:    true,
-					Type:        component.InputTypeText,
-					HelpText:    "A name to easily identify the database",
-				}),
+					component.InputControl(component.InputControlParams{
+						Name:        "name",
+						Label:       "Name",
+						Placeholder: "My database",
+						Required:    true,
+						Type:        component.InputTypeText,
+						HelpText:    "A name to easily identify the database",
+					}),
 
-				component.SelectControl(component.SelectControlParams{
-					Name:        "database_type",
-					Label:       "Database Type",
-					Placeholder: "Select a database type",
-					Required:    true,
-					HelpText:    "The type of database",
-					Children: []nodx.Node{
-						alpine.XModel("dbType"),
-						alpine.XOn("change", "updateDatabaseType()"),
-						component.DatabaseTypeSelectOptions(sql.NullString{}),
-					},
-				}),
+					component.SelectControl(component.SelectControlParams{
+						Name:        "database_type",
+						Label:       "Database Type",
+						Placeholder: "Select a database type",
+						Required:    true,
+						HelpText:    "The type of database",
+						Children: []nodx.Node{
+							alpine.XModel("dbType"),
+							alpine.XOn("change", "updateDatabaseType()"),
+							component.DatabaseTypeSelectOptions(sql.NullString{}),
+						},
+					}),
 
-				component.SelectControl(component.SelectControlParams{
-					Name:        "version",
-					Label:       "Version",
-					Placeholder: "Select a version",
-					Required:    false,
-					HelpText:    "The version of the database",
-					Children: []nodx.Node{
-						component.DatabaseVersionSelectOptions("postgresql", sql.NullString{}),
-					},
-				}),
+					component.SelectControl(component.SelectControlParams{
+						Name:        "version",
+						Label:       "Version",
+						Placeholder: "Select a version",
+						Required:    false,
+						HelpText:    "The version of the database",
+						Children: []nodx.Node{
+							component.DatabaseVersionSelectOptions("postgresql", sql.NullString{}),
+						},
+					}),
 
-				component.InputControl(component.InputControlParams{
-					Name:        "connection_string",
-					Label:       "Connection string",
-					Placeholder: "postgresql://user:password@localhost:5432/mydb",
-					Required:    true,
-					Type:        component.InputTypeText,
-					HelpText:    "Connection string for the database. For PostgreSQL: postgresql://user:password@host:port/dbname. For ClickHouse (in Docker): --host=pbw_clickhouse --port=9000 --user=default --password= or clickhouse://default@pbw_clickhouse:9000/default. For local ClickHouse: --host=localhost --port=9000 --user=default --password=. It will be stored securely using PGP encryption.",
-				}),
+					component.InputControl(component.InputControlParams{
+						Name:        "connection_string",
+						Label:       "Connection string",
+						Placeholder: "postgresql://user:password@localhost:5432/mydb",
+						Required:    true,
+						Type:        component.InputTypeText,
+						HelpText:    "Connection string for the database. For PostgreSQL: postgresql://user:password@host:port/dbname. For ClickHouse: clickhouse://default:password@pbw_clickhouse:9000/default. It will be stored securely using PGP encryption.",
+					}),
 				),
 			),
 
