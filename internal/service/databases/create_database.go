@@ -9,7 +9,10 @@ import (
 func (s *Service) CreateDatabase(
 	ctx context.Context, params dbgen.DatabasesServiceCreateDatabaseParams,
 ) (dbgen.Database, error) {
-	err := s.TestDatabase(ctx, params.DatabaseType, params.Version, params.ConnectionString)
+	// Extract version string from params
+	versionStr := params.Version
+
+	err := s.TestDatabase(ctx, params.DatabaseType, versionStr, params.ConnectionString)
 	if err != nil {
 		return dbgen.Database{}, err
 	}

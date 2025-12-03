@@ -21,14 +21,15 @@ func (s *Service) UpdateDatabase(
 		dbType = existing.DatabaseType
 	}
 
-	version := params.Version.String
+	version := extractVersionString(params.Version)
 	if !params.Version.Valid {
 		// Get existing database to get its version
 		existing, err := s.GetDatabase(ctx, params.ID)
 		if err != nil {
 			return dbgen.Database{}, err
 		}
-		version = existing.Version
+		// Extract version string (handles both string and sql.NullString after SQLC regeneration)
+		version = extractVersionString(existing.Version)
 	}
 
 	connString := params.ConnectionString.String

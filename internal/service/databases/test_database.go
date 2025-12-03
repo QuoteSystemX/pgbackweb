@@ -36,7 +36,10 @@ func (s *Service) TestDatabaseAndStoreResult(
 		return storeRes(false, fmt.Errorf("error getting database: %w", err))
 	}
 
-	err = s.TestDatabase(ctx, db.DatabaseType, db.Version, db.DecryptedConnectionString)
+	// Extract version string (handles both string and sql.NullString after SQLC regeneration)
+	version := extractVersionString(db.Version)
+
+	err = s.TestDatabase(ctx, db.DatabaseType, version, db.DecryptedConnectionString)
 	if err != nil && db.TestOk.Valid && db.TestOk.Bool {
 		s.webhooksService.RunDatabaseUnhealthy(db.ID)
 	}
