@@ -2,6 +2,7 @@ package databases
 
 import (
 	"database/sql"
+	"reflect"
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
 	"github.com/eduardolat/pgbackweb/internal/util/pathutil"
@@ -15,6 +16,48 @@ import (
 	htmx "github.com/nodxdev/nodxgo-htmx"
 	lucide "github.com/nodxdev/nodxgo-lucide"
 )
+
+// extractVersionNullString extracts sql.NullString from either string or sql.NullString
+// This handles both cases: before SQLC regeneration (string) and after (sql.NullString)
+func extractVersionNullString(version interface{}) sql.NullString {
+	if version == nil {
+		return sql.NullString{Valid: false}
+	}
+
+	// Handle sql.NullString
+	if ns, ok := version.(sql.NullString); ok {
+		return ns
+	}
+
+	// Handle string
+	if s, ok := version.(string); ok {
+		if s == "" {
+			return sql.NullString{Valid: false}
+		}
+		return sql.NullString{String: s, Valid: true}
+	}
+
+	// Handle via reflection for other types
+	v := reflect.ValueOf(version)
+	if v.Kind() == reflect.String {
+		s := v.String()
+		if s == "" {
+			return sql.NullString{Valid: false}
+		}
+		return sql.NullString{String: s, Valid: true}
+	}
+
+	return sql.NullString{Valid: false}
+}
+
+// extractVersionString extracts version string from either string or sql.NullString
+func extractVersionString(version interface{}) string {
+	ns := extractVersionNullString(version)
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
 
 func (h *handlers) editDatabaseHandler(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -125,10 +168,7 @@ func editDatabaseButton(
 					Required: false,
 					HelpText: "The version of the database",
 					Children: []nodx.Node{
-						component.DatabaseVersionSelectOptions(database.DatabaseType, sql.NullString{
-							Valid:  database.Version != "",
-							String: database.Version,
-						}),
+						component.DatabaseVersionSelectOptions(database.DatabaseType, extractVersionNullString(database.Version)),
 					},
 				}),
 
