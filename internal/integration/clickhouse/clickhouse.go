@@ -4,9 +4,11 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/eduardolat/pgbackweb/internal/integration/database"
 	"github.com/eduardolat/pgbackweb/internal/util/strutil"
@@ -57,15 +59,75 @@ func (Client) ParseVersion(version string) (interface{}, error) {
 	return version, nil
 }
 
+// parseConnectionString parses a ClickHouse connection string and returns
+// command-line arguments for clickhouse-client.
+// Supports both URL format (clickhouse://user:password@host:port/database)
+// and flag format (--host=... --port=... etc.)
+func parseConnectionString(connString string) ([]string, error) {
+	// If it starts with clickhouse://, parse as URL
+	if strings.HasPrefix(connString, "clickhouse://") {
+		parsedURL, err := url.Parse(connString)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing ClickHouse URL: %w", err)
+		}
+
+		args := []string{}
+
+		// Extract host
+		host := parsedURL.Hostname()
+		if host == "" {
+			host = "localhost"
+		}
+		args = append(args, "--host="+host)
+
+		// Extract port
+		port := parsedURL.Port()
+		if port == "" {
+			port = "9000" // Default ClickHouse port
+		}
+		args = append(args, "--port="+port)
+
+		// Extract user
+		user := parsedURL.User.Username()
+		if user == "" {
+			user = "default"
+		}
+		args = append(args, "--user="+user)
+
+		// Extract password
+		password, hasPassword := parsedURL.User.Password()
+		if hasPassword {
+			args = append(args, "--password="+password)
+		}
+
+		// Extract database (path)
+		database := strings.TrimPrefix(parsedURL.Path, "/")
+		if database == "" {
+			database = "default"
+		}
+		args = append(args, "--database="+database)
+
+		return args, nil
+	}
+
+	// Otherwise, treat as already-formatted command-line arguments
+	// Split by spaces to get individual arguments
+	// This maintains backward compatibility with flag-based format
+	parts := strings.Fields(connString)
+	return parts, nil
+}
+
 // Test tests the connection to the ClickHouse database
 func (Client) Test(version string, connString string) error {
-	// Use clickhouse-client to test connection
-	// The connString can be in format:
-	//   - For Docker: --host=pbw_clickhouse --port=9000 --user=default --password=
-	//   - For local: --host=localhost --port=9000 --user=default --password=
-	//   - Or as a clickhouse:// URL: clickhouse://default@localhost:9000/default
-	// clickhouse-client will parse the connection string automatically
-	cmd := exec.Command("clickhouse-client", connString, "--query", "SELECT 1")
+	// Parse connection string to get command-line arguments
+	connArgs, err := parseConnectionString(connString)
+	if err != nil {
+		return fmt.Errorf("error parsing connection string: %w", err)
+	}
+
+	// Build command with connection arguments and query
+	args := append(connArgs, "--query", "SELECT 1")
+	cmd := exec.Command("clickhouse-client", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		versionStr := version
