@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
@@ -16,35 +15,6 @@ import (
 	"github.com/eduardolat/pgbackweb/internal/util/timeutil"
 	"github.com/google/uuid"
 )
-
-// extractVersionString extracts version string from either string or sql.NullString
-// This handles both cases: before SQLC regeneration (string) and after (sql.NullString)
-func extractVersionString(version interface{}) string {
-	if version == nil {
-		return ""
-	}
-
-	// Handle sql.NullString
-	if ns, ok := version.(sql.NullString); ok {
-		if ns.Valid {
-			return ns.String
-		}
-		return ""
-	}
-
-	// Handle string
-	if s, ok := version.(string); ok {
-		return s
-	}
-
-	// Handle via reflection for other types
-	v := reflect.ValueOf(version)
-	if v.Kind() == reflect.String {
-		return v.String()
-	}
-
-	return ""
-}
 
 // RunExecution runs a backup execution
 func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
@@ -119,11 +89,8 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		})
 	}
 
-	// Extract version string (handles both string and sql.NullString after SQLC regeneration)
-	databaseVersion := extractVersionString(back.DatabaseVersion)
-
 	// Test database connection
-	err = dbClient.Test(databaseVersion, back.DecryptedDatabaseConnectionString)
+	err = dbClient.Test(back.DatabaseVersion, back.DecryptedDatabaseConnectionString)
 	if err != nil {
 		logError(err)
 		return updateExec(dbgen.ExecutionsServiceUpdateExecutionParams{
@@ -160,7 +127,7 @@ func (s *Service) RunExecution(ctx context.Context, backupID uuid.UUID) error {
 		dumpParams = nil
 	}
 
-	dumpReader := dbClient.DumpZip(databaseVersion, back.DecryptedDatabaseConnectionString, dumpParams)
+	dumpReader := dbClient.DumpZip(back.DatabaseVersion, back.DecryptedDatabaseConnectionString, dumpParams)
 
 	date := time.Now().Format(timeutil.LayoutSlashYYYYMMDD)
 	file := fmt.Sprintf(

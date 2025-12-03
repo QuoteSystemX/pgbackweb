@@ -1,13 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 
--- Make version column nullable
-ALTER TABLE databases
-ALTER COLUMN version DROP NOT NULL;
-
--- Update CHECK constraint to allow NULL for ClickHouse
--- For PostgreSQL, version must be one of the supported versions
--- For ClickHouse, version can be NULL
+-- Update CHECK constraint to allow both PostgreSQL and ClickHouse versions
 DO $$
 BEGIN
     IF EXISTS (
@@ -21,10 +15,11 @@ BEGIN
     ALTER TABLE databases
     ADD CONSTRAINT databases_version_check
     CHECK (
-        version IS NULL 
-        OR (
-            database_type = 'postgresql' 
-            AND version IN ('13', '14', '15', '16', '17', '18')
+        version IN (
+            -- PostgreSQL versions
+            '13', '14', '15', '16', '17', '18',
+            -- ClickHouse versions
+            '22.8', '23.8', '24.1', '24.3'
         )
     );
 END $$;
@@ -49,10 +44,6 @@ BEGIN
     ADD CONSTRAINT databases_version_check
     CHECK (version IN ('13', '14', '15', '16', '17', '18'));
 END $$;
-
--- Make version NOT NULL again
-ALTER TABLE databases
-ALTER COLUMN version SET NOT NULL;
 
 -- +goose StatementEnd
 

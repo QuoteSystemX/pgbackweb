@@ -91,13 +91,7 @@ func listDatabases(
 					component.SpanText(database.Name),
 				),
 			),
-			nodx.Td(component.SpanText(func() string {
-				version := extractVersionString(database.Version)
-				if version == "" {
-					return database.DatabaseType
-				}
-				return fmt.Sprintf("%s %s", database.DatabaseType, version)
-			}())),
+			nodx.Td(component.SpanText(fmt.Sprintf("%s %s", database.DatabaseType, database.Version))),
 			nodx.Td(
 				nodx.Class("space-x-1"),
 				component.CopyButtonSm(database.DecryptedConnectionString),

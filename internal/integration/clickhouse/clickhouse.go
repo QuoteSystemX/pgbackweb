@@ -39,11 +39,6 @@ func (Client) GetSupportedVersions() []string {
 
 // ParseVersion validates and parses the version string for ClickHouse
 func (Client) ParseVersion(version string) (interface{}, error) {
-	// Version is optional for ClickHouse - allow empty string
-	if version == "" {
-		return "", nil
-	}
-
 	// Validate version format (should be like "22.8", "23.8", etc.)
 	supportedVersions := map[string]bool{
 		"22.8": true,
@@ -61,8 +56,7 @@ func (Client) ParseVersion(version string) (interface{}, error) {
 
 // parseConnectionString parses a ClickHouse connection string and returns
 // command-line arguments for clickhouse-client.
-// Supports both URL format (clickhouse://user:password@host:port/database)
-// and flag format (--host=... --port=... etc.)
+// Supports URL format (clickhouse://user:password@host:port/database)
 func parseConnectionString(connString string) ([]string, error) {
 	// If it starts with clickhouse://, parse as URL
 	if strings.HasPrefix(connString, "clickhouse://") {
@@ -130,13 +124,9 @@ func (Client) Test(version string, connString string) error {
 	cmd := exec.Command("clickhouse-client", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		versionStr := version
-		if versionStr == "" {
-			versionStr = "unknown"
-		}
 		return fmt.Errorf(
 			"error running clickhouse-client test v%s: %s",
-			versionStr, output,
+			version, output,
 		)
 	}
 
@@ -158,12 +148,7 @@ func (c *Client) DumpZip(version string, connString string, params database.Dump
 		}
 		defer os.RemoveAll(workDir)
 
-		// Use version in backup name, or "unknown" if not provided
-		versionStr := version
-		if versionStr == "" {
-			versionStr = "unknown"
-		}
-		backupName := fmt.Sprintf("backup-%s", versionStr)
+		backupName := fmt.Sprintf("backup-%s", version)
 		backupPath := filepath.Join(workDir, backupName)
 
 		// Build clickhouse-backup command
@@ -194,13 +179,9 @@ func (c *Client) DumpZip(version string, connString string, params database.Dump
 		cmd.Dir = workDir
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			versionStr := version
-			if versionStr == "" {
-				versionStr = "unknown"
-			}
 			writer.CloseWithError(fmt.Errorf(
 				"error running clickhouse-backup create v%s: %s",
-				versionStr, output,
+				version, output,
 			))
 			return
 		}

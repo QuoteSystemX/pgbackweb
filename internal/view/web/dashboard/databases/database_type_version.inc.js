@@ -40,27 +40,6 @@ window.alpineDatabaseTypeVersion = function () {
       const versionSelect = this.$el.querySelector('select[name="version"]');
       if (!versionSelect) return;
 
-      // Find the form-control parent more reliably
-      // SlimSelect might wrap the select, so we need to traverse up
-      let versionField = versionSelect;
-      while (versionField && !versionField.classList.contains('form-control')) {
-        versionField = versionField.parentElement;
-      }
-      if (versionField) {
-        if (this.dbType === "clickhouse") {
-          versionField.style.display = "none";
-          // Clear version value for ClickHouse
-          versionSelect.value = "";
-        } else {
-          versionField.style.display = "";
-        }
-      }
-
-      // For ClickHouse, don't update options
-      if (this.dbType === "clickhouse") {
-        return;
-      }
-
       // Clear existing options except the first placeholder
       const placeholder = versionSelect.querySelector('option[value=""]');
       versionSelect.innerHTML = "";

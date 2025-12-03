@@ -9,10 +9,7 @@ import (
 func (s *Service) CreateDatabase(
 	ctx context.Context, params dbgen.DatabasesServiceCreateDatabaseParams,
 ) (dbgen.Database, error) {
-	// Extract version string (handles both string and interface{} after SQLC regeneration with NULLIF)
-	versionStr := extractVersionString(params.Version)
-
-	err := s.TestDatabase(ctx, params.DatabaseType, versionStr, params.ConnectionString)
+	err := s.TestDatabase(ctx, params.DatabaseType, params.Version, params.ConnectionString)
 	if err != nil {
 		return dbgen.Database{}, err
 	}
