@@ -4,12 +4,42 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
 	"github.com/eduardolat/pgbackweb/internal/logger"
 	"github.com/google/uuid"
 )
+
+// extractVersionString extracts version string from either string or sql.NullString
+// This handles both cases: before SQLC regeneration (string) and after (sql.NullString)
+func extractVersionString(version interface{}) string {
+	if version == nil {
+		return ""
+	}
+
+	// Handle sql.NullString
+	if ns, ok := version.(sql.NullString); ok {
+		if ns.Valid {
+			return ns.String
+		}
+		return ""
+	}
+
+	// Handle string
+	if s, ok := version.(string); ok {
+		return s
+	}
+
+	// Handle via reflection for other types
+	v := reflect.ValueOf(version)
+	if v.Kind() == reflect.String {
+		return v.String()
+	}
+
+	return ""
+}
 
 // RunRestoration runs a backup restoration
 func (s *Service) RunRestoration(
@@ -106,8 +136,11 @@ func (s *Service) RunRestoration(
 		})
 	}
 
+	// Extract version string (handles both string and sql.NullString after SQLC regeneration)
+	databaseVersion := extractVersionString(execution.DatabaseVersion)
+
 	// Test database connection
-	err = dbClient.Test(execution.DatabaseVersion, connString)
+	err = dbClient.Test(databaseVersion, connString)
 	if err != nil {
 		logError(err)
 		return updateRes(dbgen.RestorationsServiceUpdateRestorationParams{
@@ -131,7 +164,7 @@ func (s *Service) RunRestoration(
 		})
 	}
 
-	err = dbClient.RestoreZip(execution.DatabaseVersion, connString, isLocal, zipURLOrPath)
+	err = dbClient.RestoreZip(databaseVersion, connString, isLocal, zipURLOrPath)
 	if err != nil {
 		logError(err)
 		return updateRes(dbgen.RestorationsServiceUpdateRestorationParams{
