@@ -237,6 +237,7 @@ echo "user@example.com" | kubectl exec -i <pod_name> -n <namespace> -- change-pa
 ```
 
 Replace:
+
 - `<pod_name>` with the name of your PG Back Web pod (e.g., `pgbackweb-5bc4c86566-ltdwq`)
 - `<namespace>` with the namespace where PG Back Web is deployed (e.g., `database`)
 - `user@example.com` with the email address of the user whose password you want to reset

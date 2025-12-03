@@ -41,7 +41,8 @@ window.alpineDatabaseTypeVersion = function () {
       if (!versionSelect) return;
 
       // Hide/show version field based on database type
-      const versionField = versionSelect.closest('.form-control') || versionSelect.parentElement;
+      const versionField =
+        versionSelect.closest(".form-control") || versionSelect.parentElement;
       if (versionField) {
         if (this.dbType === "clickhouse") {
           versionField.style.display = "none";
