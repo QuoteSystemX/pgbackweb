@@ -40,9 +40,12 @@ window.alpineDatabaseTypeVersion = function () {
       const versionSelect = this.$el.querySelector('select[name="version"]');
       if (!versionSelect) return;
 
-      // Hide/show version field based on database type
-      const versionField =
-        versionSelect.closest(".form-control") || versionSelect.parentElement;
+      // Find the form-control parent more reliably
+      // SlimSelect might wrap the select, so we need to traverse up
+      let versionField = versionSelect;
+      while (versionField && !versionField.classList.contains('form-control')) {
+        versionField = versionField.parentElement;
+      }
       if (versionField) {
         if (this.dbType === "clickhouse") {
           versionField.style.display = "none";
