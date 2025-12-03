@@ -2,8 +2,10 @@ package executions
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
 	"github.com/eduardolat/pgbackweb/internal/util/echoutil"
@@ -18,6 +20,35 @@ import (
 	htmx "github.com/nodxdev/nodxgo-htmx"
 	lucide "github.com/nodxdev/nodxgo-lucide"
 )
+
+// extractVersionString extracts version string from either string or sql.NullString
+// This handles both cases: before SQLC regeneration (string) and after (sql.NullString)
+func extractVersionString(version interface{}) string {
+	if version == nil {
+		return ""
+	}
+
+	// Handle sql.NullString
+	if ns, ok := version.(sql.NullString); ok {
+		if ns.Valid {
+			return ns.String
+		}
+		return ""
+	}
+
+	// Handle string
+	if s, ok := version.(string); ok {
+		return s
+	}
+
+	// Handle via reflection for other types
+	v := reflect.ValueOf(version)
+	if v.Kind() == reflect.String {
+		return v.String()
+	}
+
+	return ""
+}
 
 func (h *handlers) restoreExecutionHandler(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -54,8 +85,10 @@ func (h *handlers) restoreExecutionHandler(c echo.Context) error {
 	}
 
 	if formData.ConnString != "" {
+		// Extract version string (handles both string and sql.NullString after SQLC regeneration)
+		databaseVersion := extractVersionString(execution.DatabaseVersion)
 		err := h.servs.DatabasesService.TestDatabase(
-			ctx, execution.DatabaseDatabaseType, execution.DatabaseVersion, formData.ConnString,
+			ctx, execution.DatabaseDatabaseType, databaseVersion, formData.ConnString,
 		)
 		if err != nil {
 			return respondhtmx.ToastError(c, err.Error())
@@ -186,9 +219,13 @@ func restoreExecutionForm(
 					lucide.TriangleAlert(),
 					nodx.Div(
 						nodx.P(
-							component.BText(fmt.Sprintf(
-								"This restoration uses %s v%s", execution.DatabaseDatabaseType, execution.DatabaseVersion,
-							)),
+							component.BText(func() string {
+								version := extractVersionString(execution.DatabaseVersion)
+								if version == "" {
+									return fmt.Sprintf("This restoration uses %s", execution.DatabaseDatabaseType)
+								}
+								return fmt.Sprintf("This restoration uses %s v%s", execution.DatabaseDatabaseType, version)
+							}()),
 						),
 						component.PText(fmt.Sprintf(`
 							Please make sure the database you are restoring to is compatible
